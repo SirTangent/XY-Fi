@@ -1,2 +1,2 @@
 # XY-Fi
-XY-Fi is an Internal Positioning System aimed to support consumer friendly applications. This repository contains the necessary code for different systems including the micro-controllers and API software.
+XY-Fi is an Internal Positioning System aimed at supporting consumer-friendly applications. This repository has the necessary code for separate systems including the micro-controllers and API software.
