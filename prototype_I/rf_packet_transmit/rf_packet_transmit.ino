@@ -19,7 +19,9 @@ void rfTransmit(int state) {
 
 void rfPacketSend(unsigned int destination) {
   for(int i = 0; i < sizeof(buffer); i++) {
-    Serial.print(buffer[i]);
+    for(int b = 7; b > -1; b--) {
+      rfTransmit(bitRead(buffer[i], b));
+    }
   }
   Serial.println();
 }
@@ -33,5 +35,5 @@ void setup() {
 
 void loop() {
   rfPacketSend(2928);
-  delay(500);
+  delay(2000);
 }
