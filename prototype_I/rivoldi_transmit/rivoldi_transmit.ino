@@ -12,27 +12,80 @@ int led_tx = 13; // Pin that outputs transmission state
 #define packet_size 64 // The size of the packet's content. This excludes the header and footer!
 #define transmission_speed 2000 // The microseconds it takes for one bit to be transmitted
 
-char packet_buffer[packet_size];
+char packet[packet_size + 9];
+char message[packet_size];
 
-bool getSerialInput(char buffer[], int n) {
-  if(Serial.available() > 0) {
-    for(int i = 0; i < n; i++) {
-      buffer[i] = 0;
-    }
-    for(int i = 0; Serial.available() > 0; i++) {
-      buffer[i] = Serial.read();
-    }   
-    return true;
+void getSerialInput(char buffer[], int n, bool return_input) {
+  while(Serial.available() <= 0) {
+    delayMicroseconds(100); 
   }
-  return false;
+  for(int i = 0; i < n; i++) {
+    buffer[i] = 0;
+  }
+  delay(100);
+  for(int i = 0; Serial.available() > 0; i++) {
+    buffer[i] = Serial.read();
+  }
+  if(return_input) {
+    Serial.println(message);
+  }
 }
 
 unsigned int getChecksumLRC(char buffer[], int n) {
   unsigned int x = 0;
   for(int i = 0; i < n; i++) {
-    x += packet_buffer[i];
+    x += buffer[i];
   }
   return x;
+}
+
+char getSplitInt(int x, bool rightside) {
+  char n;
+  
+  if(rightside) {
+    for(int i = 7; i > -1; i--){
+      bitWrite(n, i, bitRead(x, i));
+    }
+  }else{
+    for(int i = 15; i > 7; i--){
+      bitWrite(n, i-8, bitRead(x, i));
+    }
+  }
+  
+  return n;
+}
+
+void buildPacket(char buffer[], int buffer_length, int destination, char content[], int content_length){
+  int n = 0;
+  // Write Master Callsign
+  buffer[n] = 67;
+  n++;
+  // Write Destination Address
+  buffer[n] = getSplitInt(destination, false);
+  n++;
+  buffer[n] = getSplitInt(destination, true);
+  n++;
+  // Write Sender Address
+  buffer[n] = getSplitInt(address, false);
+  n++;
+  buffer[n] = getSplitInt(address, true);
+  n++;
+  // Write Packet Length
+  buffer[n] = getSplitInt(packet_size, false);
+  n++;
+  buffer[n] = getSplitInt(packet_size, true);
+  n++;
+  // Write Content
+  for(int i = 0; i < content_length; i++) {
+    buffer[n] = content[i];
+    n++;
+  }
+  // Write Checksum
+  unsigned int checksum = getChecksumLRC(buffer, buffer_length);
+  buffer[n] = getSplitInt(checksum, false);
+  n++;
+  buffer[n] = getSplitInt(checksum, true);
+  n++;
 }
 
 void setup() {
@@ -42,12 +95,16 @@ void setup() {
 }
 
 void loop() {
-  if(getSerialInput(packet_buffer, sizeof(packet_buffer))) {
-    Serial.print("Input: ");
-    Serial.println(packet_buffer);
+    Serial.print("Enter Message (Max ");
+    Serial.print(packet_size);
+    Serial.print("): ");
 
-    Serial.print("Checksum (x8): ");
-    Serial.println(getChecksumLRC(packet_buffer, sizeof(packet_buffer)));
-  }
-  delay(500);
+    getSerialInput(message, sizeof(message), true);
+    buildPacket(packet, sizeof(packet), 1923, message, sizeof(message));
+
+    for(int i = 0; i < sizeof(packet); i++){
+      Serial.print((int) packet[i]);
+      Serial.print(" ");
+    }
+    Serial.println();
 }
