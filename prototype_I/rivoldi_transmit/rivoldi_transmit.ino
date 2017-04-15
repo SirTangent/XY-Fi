@@ -9,7 +9,7 @@ int transmitter = 2; // Pin going to the RF module
 int led_tx = 13; // Pin that outputs transmission state
 
 #define address 8020 // The integer address of this device
-#define packet_size 64 // The size of the packet's content. This excludes the header and footer!
+#define packet_size 32 // The size of the packet's content. This excludes the header and footer!
 #define transmission_speed 2000 // The microseconds it takes for one bit to be transmitted
 
 char packet[packet_size + 9];
@@ -88,6 +88,27 @@ void buildPacket(char buffer[], int buffer_length, int destination, char content
   n++;
 }
 
+void rawTransmit(int state, bool enable_led) {
+  if(state) {
+    digitalWrite(led_tx, HIGH);
+    digitalWrite(transmitter, HIGH);
+  }else{
+    digitalWrite(led_tx, LOW);
+    digitalWrite(transmitter, LOW);
+  }
+  delayMicroseconds(transmission_speed);
+}  
+
+void transmitPacket(char buffer[], int n) {
+  for(int i = 0; i < n; i++) {
+    for(int b = 7; b > -1; b--) {
+      rawTransmit(bitRead(buffer[i], b), true);
+    }
+  }
+  digitalWrite(led_tx, LOW);
+  digitalWrite(transmitter, LOW);
+}
+
 void setup() {
     pinMode(transmitter, OUTPUT);
     pinMode(led_tx, OUTPUT);
@@ -95,16 +116,23 @@ void setup() {
 }
 
 void loop() {
-    Serial.print("Enter Message (Max ");
-    Serial.print(packet_size);
-    Serial.print("): ");
+    String msg = "Hello, Swampscott!";
+    msg.toCharArray(message, sizeof(message));
 
-    getSerialInput(message, sizeof(message), true);
-    buildPacket(packet, sizeof(packet), 1923, message, sizeof(message));
-
+    Serial.print("Building Packet: ");
+    buildPacket(packet, sizeof(packet), 2017, message, sizeof(message));
     for(int i = 0; i < sizeof(packet); i++){
       Serial.print((int) packet[i]);
       Serial.print(" ");
     }
+    Serial.println();
+
+    Serial.print("transmitting in Five Seconds (S:");
+    Serial.print(transmission_speed);
+    Serial.println("μs)...");
+
+    transmitPacket(packet, sizeof(packet));
+
+    Serial.println("Done!");
     Serial.println();
 }
