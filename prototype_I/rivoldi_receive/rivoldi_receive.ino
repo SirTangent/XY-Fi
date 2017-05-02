@@ -25,7 +25,7 @@ unsigned int getChecksumLRC(char buffer[], int n) {
 }
 
 int rawRecieve(bool enable_led) {
-  if(analogRead(receiver) >= receiveThreshold) {
+  if(digitalRead(receiver) == HIGH) {
     digitalWrite(led_rx, HIGH);
     return 1;
   }else{
@@ -92,6 +92,7 @@ void receivePacket(char buffer[], int buffer_size) {
 
 void setup() {
   pinMode(led_rx, OUTPUT);
+  pinMode(receiver, INPUT);
   Serial.begin(9600);
 }
 

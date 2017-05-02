@@ -127,7 +127,7 @@ void loop() {
     }
     Serial.println();
 
-    Serial.print("transmitting in Five Seconds (S:");
+    Serial.print("transmitting (S:");
     Serial.print(transmission_speed);
     Serial.println("μs)...");
 
